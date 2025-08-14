@@ -20,7 +20,7 @@ export default function LoginPage(){
   return (
     <div className="centered" style={{background:'#0b1020',color:'#111'}}>
       <div className="bg-overlay">
-        <Image src="/images/Logo_1.png" alt="logo" width={560} height={560} className="logo-behind" priority />
+       <Image src="/images/Logo_1.webp" alt="logo" width={560} height={560} className="logo-behind" priority />
       </div>
       <form onSubmit={onSubmit} className="card">
         <div className="title" style={{textAlign:'center'}}>LOVE SHOULD BE FREE</div>
