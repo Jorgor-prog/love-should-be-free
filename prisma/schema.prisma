@@ -1,0 +1,56 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  role          Role      @default(USER)
+  loginId       String    @unique  // visible ID for login (8 digits for normal users, 'Admin303' for admin)
+  passwordHash  String
+  adminNoteName String?   // only visible to admin for moderation
+  isOnline      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  profile       Profile?
+  messagesSent  Message[] @relation("messagesSent")
+  messagesRecv  Message[] @relation("messagesRecv")
+  codeConfig    CodeConfig?
+}
+
+model Profile {
+  id          Int     @id @default(autoincrement())
+  user        User    @relation(fields: [userId], references: [id])
+  userId      Int     @unique
+  websiteName String? // выбранный сайт "кокз 1" ... 
+  nameOnSite  String?
+  idOnSite    String?
+  residence   String?
+  photoUrl    String?
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  from      User     @relation("messagesSent", fields: [fromId], references: [id])
+  fromId    Int
+  to        User     @relation("messagesRecv", fields: [toId], references: [id])
+  toId      Int
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model CodeConfig {
+  id             Int     @id @default(autoincrement())
+  user           User    @relation(fields: [userId], references: [id])
+  userId         Int     @unique
+  code           String  @default("")
+  emitIntervalSec Int    @default(22) // admin can change
+}
+
+enum Role {
+  ADMIN
+  USER
+}

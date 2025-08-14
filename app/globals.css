@@ -1,0 +1,28 @@
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial}
+a{color:inherit;text-decoration:none}
+.centered{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative}
+.card{background:#fff; padding:24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.12);max-width:420px;width:100%}
+.bg-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.logo-behind{opacity:.15;max-width:560px;width:80%}
+.nav{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(255,255,255,.7);backdrop-filter:saturate(180%) blur(8px);position:sticky;top:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.exit{background:#16a34a;color:#fff;padding:10px 16px;border-radius:12px;box-shadow:0 0 12px rgba(22,163,74,.8);}
+.exit:hover{filter:brightness(1.05)}
+.btn{padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;cursor:pointer}
+.btn-primary{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.muted{color:#6b7280;font-size:12px}
+.input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #d1d5db}
+.stack{display:grid;gap:12px}
+.title{font-size:22px;font-weight:700;margin-bottom:8px}
+.subtitle{font-size:14px;color:#6b7280;margin-bottom:12px}
+.blue-white{--blue:#0ea5e9}
+.blue-white .header{background:linear-gradient(90deg,#0ea5e9,#60a5fa);color:#fff;padding:16px 20px;border-radius:0 0 12px 12px;font-weight:700}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
+.grid{display:grid;gap:16px}
+.grid.cols-2{grid-template-columns:1fr 1fr}
+.badge{background:#e5e7eb;border-radius:999px;padding:2px 8px;font-size:12px}
+.chatbox{border:1px solid #e5e7eb;border-radius:16px;height:360px;overflow:auto;padding:12px;background:#fafafa}
+.chat-input{display:flex;gap:8px;margin-top:8px}
+.pill{padding:6px 10px;border:1px solid #d1d5db;border-radius:999px}

@@ -1,0 +1,26 @@
+{
+  "name": "love-should-be-free",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "postinstall": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node prisma/seed.js",
+    "optimize:images": "node scripts/optimize-images.js"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@prisma/client": "5.14.0",
+    "prisma": "5.14.0",
+    "bcryptjs": "2.4.3",
+    "jsonwebtoken": "9.0.2",
+    "cookie": "0.6.0",
+    "formidable": "3.5.4",
+    "sharp": "0.33.2"
+  }
+}
