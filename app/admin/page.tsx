@@ -1,14 +1,9 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 
-type UserLite = {
-  id: number;
-  loginId: string;
-  password?: string;
-  adminNoteName?: string;
-  profile?: { nameOnSite?:string; idOnSite?:string; residence?:string; photoUrl?:string };
-  codeConfig?: { code?: string; emitIntervalSec?: number; paused?: boolean };
-};
+type Profile = { nameOnSite?:string; idOnSite?:string; residence?:string; photoUrl?:string };
+type CodeCfg = { code?:string; emitIntervalSec?:number; paused?:boolean };
+type UserLite = { id:number; loginId:string; password?:string|null; adminNoteName?:string|null; profile?:Profile; codeConfig?:CodeCfg };
 
 export default function AdminPage() {
   const [users, setUsers] = useState<UserLite[]>([]);
@@ -16,31 +11,36 @@ export default function AdminPage() {
   const [adminNoteName, setAdminNoteName] = useState('');
   const [code, setCode] = useState('');
   const [emitInterval, setEmitInterval] = useState(22);
+  const [creating, setCreating] = useState(false);
 
   async function loadUsers() {
-    const res = await fetch('/api/admin/users');
-    const data = await res.json();
-    setUsers(data.users || []);
+    const r = await fetch('/api/admin/users');
+    if (!r.ok) { alert('Auth error. Re-login as Admin.'); return; }
+    const j = await r.json();
+    setUsers(j.users || []);
   }
 
   async function openUser(id: number) {
-    const res = await fetch(`/api/admin/users/${id}`);
-    const data = await res.json();
-    const u: UserLite = data.user;
+    const r = await fetch(`/api/admin/users/${id}`);
+    const j = await r.json();
+    const u: UserLite = j.user;
     setSelected(u);
     setAdminNoteName(u.adminNoteName || '');
     setCode(u.codeConfig?.code || '');
     setEmitInterval(u.codeConfig?.emitIntervalSec || 22);
   }
 
-  async function saveModeration() {
-    if (!selected) return;
-    await fetch(`/api/admin/users/${selected.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ adminNoteName, code, emitIntervalSec: emitInterval })
+  async function createUser() {
+    setCreating(true);
+    const r = await fetch('/api/admin/users', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminNoteName })
     });
-    await openUser(selected.id);
+    setCreating(false);
+    if (!r.ok) { alert('Failed to create'); return; }
+    const j = await r.json();
+    await loadUsers();
+    alert(`User created\nLogin: ${j.user.loginId}\nPassword: ${j.user.password}`);
   }
 
   async function saveProfile() {
@@ -48,11 +48,9 @@ export default function AdminPage() {
     const nameOnSite = (document.getElementById('nameOnSite') as HTMLInputElement).value;
     const idOnSite = (document.getElementById('idOnSite') as HTMLInputElement).value;
     const residence = (document.getElementById('residence') as HTMLInputElement).value;
-
     await fetch(`/api/admin/users/${selected.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ profile: { nameOnSite, idOnSite, residence } })
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ profile:{ nameOnSite, idOnSite, residence } })
     });
     await openUser(selected.id);
   }
@@ -64,6 +62,15 @@ export default function AdminPage() {
     const fd = new FormData();
     fd.append('file', file);
     await fetch(`/api/admin/users/${selected.id}/photo`, { method:'POST', body: fd });
+    await openUser(selected.id);
+  }
+
+  async function saveModeration() {
+    if (!selected) return;
+    await fetch(`/api/admin/users/${selected.id}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ adminNoteName, code, emitIntervalSec: emitInterval })
+    });
     await openUser(selected.id);
   }
 
@@ -82,24 +89,40 @@ export default function AdminPage() {
       <h1>Admin Panel</h1>
 
       <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap: 24 }}>
+        {/* LEFT: list + create */}
         <div>
           <h3>Users</h3>
+          <div style={{display:'flex', gap:8, marginBottom:12}}>
+            <input
+              className="input"
+              placeholder="Internal name"
+              value={adminNoteName}
+              onChange={e=>setAdminNoteName(e.target.value)}
+              style={{flex:1, minWidth:0}}
+            />
+            <button className="btn btn-primary" onClick={createUser} disabled={creating}>
+              {creating ? 'Creating…' : 'Create user'}
+            </button>
+          </div>
+
           <div style={{ display:'grid', gap:8 }}>
             {users.map(u=>(
               <button key={u.id} className="btn" onClick={()=>openUser(u.id)}>
                 {u.profile?.nameOnSite || `User #${u.id}`}
               </button>
             ))}
+            {users.length === 0 && <div className="muted">No users yet</div>}
           </div>
         </div>
 
+        {/* RIGHT: details */}
         <div>
           {selected ? (
             <>
               <div className="panel">
                 <h3>User details</h3>
                 <div><b>Login:</b> {selected.loginId}</div>
-                <div><b>Password:</b> {selected.password || '—'}</div>
+                <div><b>Password:</b> {selected.password ?? '—'}</div>
 
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:12 }}>
                   <div>
@@ -115,7 +138,11 @@ export default function AdminPage() {
                   <div>
                     <div className="muted">Profile photo</div>
                     {selected.profile?.photoUrl ? (
-                      <img src={selected.profile.photoUrl} alt="photo" style={{ width:140, height:140, borderRadius:'50%', objectFit:'cover', border:'2px solid #e5e7eb' }} />
+                      <img
+                        src={selected.profile.photoUrl}
+                        alt="photo"
+                        style={{ width:140, height:140, borderRadius:'50%', objectFit:'cover', border:'2px solid #e5e7eb' }}
+                      />
                     ) : <div className="muted">No photo</div>}
                     <input type="file" accept="image/*" onChange={uploadPhoto} style={{ marginTop:8 }} />
                   </div>
