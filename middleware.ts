@@ -2,20 +2,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PROTECTED = ['/admin','/dashboard','/confirm','/chat','/about','/reviews'];
+const PUBLIC = ['/', '/login', '/about', '/reviews', '/api/health'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isProtected = PROTECTED.some(p => pathname.startsWith(p));
-  if (!isProtected) return NextResponse.next();
 
+  // Разрешаем публичные страницы
+  if (PUBLIC.some(p => pathname === p || pathname.startsWith(p))) {
+    // если это именно корень — всегда редиректим на /login
+    if (pathname === '/') {
+      const url = req.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // Защищенные маршруты: нужна кука
   const token = req.cookies.get('lsbf_token')?.value;
-  if (!token) return NextResponse.redirect(new URL('/login', req.url));
+  if (!token) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
 
-  // Не проверяем роль в middleware. Проверка ролей — внутри API/страниц.
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*','/dashboard/:path*','/confirm/:path*','/chat/:path*','/about','/reviews']
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|images/|uploads/).*)'
+  ]
 };
