@@ -43,11 +43,12 @@ model Message {
 }
 
 model CodeConfig {
-  id             Int     @id @default(autoincrement())
-  user           User    @relation(fields: [userId], references: [id])
-  userId         Int     @unique
-  code           String  @default("")
-  emitIntervalSec Int    @default(22) // admin can change
+  id              Int      @id @default(autoincrement())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          Int      @unique
+  code            String   @default("")
+  emitIntervalSec Int      @default(22)
+  paused          Boolean  @default(false)
 }
 
 enum Role {
