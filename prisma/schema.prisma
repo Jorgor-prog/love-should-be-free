@@ -16,14 +16,19 @@ enum Role {
 model User {
   id             Int         @id @default(autoincrement())
   loginId        String      @unique
-  loginPassword  String?     // видимый пароль для админки
+  loginPassword  String?     // показываемый пароль для админки
   role           Role        @default(USER)
   adminNoteName  String?     @default("")
+
+  // СТАРЫЕ КОЛОНКИ — оставляем, чтобы не было data loss
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  isOnline       Boolean     @default(false)
+  passwordHash   String?     // можем не использовать, просто подхватываем существующую колонку
 
   profile        Profile?
   codeConfig     CodeConfig?
 
-  // связи с сообщениями
   messagesFrom   Message[]   @relation("messagesFrom")
   messagesTo     Message[]   @relation("messagesTo")
 }
@@ -56,6 +61,7 @@ model Message {
   to        User     @relation("messagesTo", fields: [toId], references: [id])
   toId      Int
 
-  text      String   @default("")   // дефолт чтобы db push прошел без ресета
+  // Подхватываем существующую колонку "body" как наше поле "text"
+  text      String   @default("") @map("body")
   createdAt DateTime @default(now())
 }
