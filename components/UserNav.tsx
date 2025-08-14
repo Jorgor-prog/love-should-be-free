@@ -1,4 +1,3 @@
-
 'use client';
 import Image from 'next/image';
 
@@ -11,9 +10,9 @@ export default function UserNav(){
         <span>LOVE SHOULD BE FREE</span>
       </div>
       <div style={{display:'flex',gap:12}}>
-        <a className="btn" href="/chat">Chat support</a>
-        <a className="btn" href="/about">About project</a>
-        <a className="btn" href="/reviews">Client reviews</a>
+        <a className="btn" href="/chat">Support chat</a>
+        <a className="btn" href="/about">About</a>
+        <a className="btn" href="/reviews">Reviews</a>
         <button className="exit" onClick={exit}>EXIT</button>
       </div>
     </div>
