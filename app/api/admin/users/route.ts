@@ -9,12 +9,14 @@ export async function GET() {
   if (!me || me.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const users = await prisma.user.findMany({
+    where: { role: 'USER' }, // <-- админа не показываем
     orderBy: { id: 'desc' },
     select: {
       id: true,
       loginId: true,
-      role: true,
-      profile: { select: { nameOnSite: true, idOnSite: true, residence: true, photoUrl: true } }
+      adminNoteName: true,
+      profile: { select: { nameOnSite: true, idOnSite: true, residence: true, photoUrl: true } },
+      codeConfig: { select: { emitIntervalSec: true, paused: true } }
     }
   });
 
@@ -26,24 +28,25 @@ export async function POST(req: Request) {
   if (!me || me.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json().catch(()=>({}));
-  const internalName = body?.adminNoteName || '';
+  const internalName = String(body?.adminNoteName || '').trim();
 
-  const rand = (n:number)=>Array.from({length:n},()=>Math.floor(Math.random()*10)).join('');
+  // Пароль: буквы + цифры, 10 символов
+  const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  const rand = (n:number)=>Array.from({length:n},()=>charset[Math.floor(Math.random()*charset.length)]).join('');
   const loginId = rand(8);
-  const password = rand(8);
+  const password = rand(10);
 
   const created = await prisma.user.create({
     data: {
       loginId,
-      loginPassword: password,        // <— сохраняем видимый пароль
+      loginPassword: password,
       role: 'USER',
-      adminNoteName: internalName,
+      adminNoteName: internalName,     // <-- сохраняем как Internal name
       profile: { create: {} },
       codeConfig: { create: { code: '', emitIntervalSec: 22, paused: false } }
     },
     select: { id:true, loginId:true, loginPassword:true }
   });
 
-  // возвращаем как password для удобства фронта
   return NextResponse.json({ user: { id: created.id, loginId: created.loginId, password: created.loginPassword } });
 }
