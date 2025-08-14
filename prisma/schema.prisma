@@ -23,7 +23,7 @@ model User {
   profile        Profile?
   codeConfig     CodeConfig?
 
-  // ВАЖНО: имена связей совпадают с Message
+  // связи с сообщениями
   messagesFrom   Message[]   @relation("messagesFrom")
   messagesTo     Message[]   @relation("messagesTo")
 }
@@ -45,19 +45,17 @@ model CodeConfig {
   code            String   @default("")
   emitIntervalSec Int      @default(22)
   paused          Boolean  @default(false)
-  // при необходимости можно добавить expiresAt DateTime?
 }
 
 model Message {
   id        Int      @id @default(autoincrement())
 
-  // Имена связей ДОЛЖНЫ совпадать с теми, что в User
   from      User     @relation("messagesFrom", fields: [fromId], references: [id])
   fromId    Int
 
   to        User     @relation("messagesTo", fields: [toId], references: [id])
   toId      Int
 
-  text      String
+  text      String   @default("")   // дефолт чтобы db push прошел без ресета
   createdAt DateTime @default(now())
 }
