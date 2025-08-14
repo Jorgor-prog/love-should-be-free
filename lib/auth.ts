@@ -1,35 +1,33 @@
-
-import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
-import { prisma } from './prisma';
+import { prisma } from '@/lib/prisma';
 
-const COOKIE = 'lsbf_token';
+type SessionUser = { id: number; role: 'ADMIN' | 'USER'; loginId: string };
 
-export function signToken(payload: any) {
-  const secret = process.env.JWT_SECRET || 'dev_secret';
-  return jwt.sign(payload, secret, { expiresIn: '7d' });
+export async function getSessionUser(): Promise<SessionUser | null> {
+  const raw = cookies().get('lsbf_token')?.value;
+  if (!raw) return null;
+  let payload: any;
+  try { payload = JSON.parse(Buffer.from(raw, 'base64').toString('utf8')); }
+  catch { return null; }
+  const id = Number(payload?.id);
+  if (!id) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, role: true, loginId: true }
+  });
+  return user as SessionUser | null;
 }
 
-export function verifyToken(token: string) {
-  const secret = process.env.JWT_SECRET || 'dev_secret';
-  try { return jwt.verify(token, secret) as any; } catch { return null; }
+// опционально, если где-то нужно строго проверять роль
+export async function requireAdmin() {
+  const u = await getSessionUser();
+  if (!u || u.role !== 'ADMIN') return null;
+  return u;
 }
 
-export async function getSessionUser() {
-  const c = cookies();
-  const token = c.get(COOKIE)?.value;
-  if (!token) return null;
-  const data = verifyToken(token);
-  if (!data) return null;
-  const user = await prisma.user.findUnique({ where: { id: data.id }, include: { profile: true, codeConfig: true } });
-  return user;
-}
-
-export function setAuthCookie(res: NextResponse, token: string) {
-  res.cookies.set(COOKIE, token, { httpOnly: true, sameSite: 'lax', path: '/' });
-}
-
-export function clearAuthCookie(res: NextResponse) {
-  res.cookies.set(COOKIE, '', { httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 });
+export async function requireUser() {
+  const u = await getSessionUser();
+  if (!u) return null;
+  return u;
 }
