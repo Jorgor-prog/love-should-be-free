@@ -5,7 +5,9 @@ import UserNav from '@/components/UserNav';
 
 export default function Dashboard(){
   return (
-    <div style={{minHeight:'100vh', backgroundImage:'url(/images/Background_1.jpg)', backgroundSize:'cover', backgroundPosition:'center'}}>
+    <div style={{minHeight:'100vh',
+  backgroundImage:'url(/images/Background_1.webp)',
+  backgroundSize:'cover', backgroundPosition:'center'}}>
       <UserNav/>
       <div className="centered" style={{alignItems:'flex-start', paddingTop:80}}>
         <div className="card" style={{maxWidth:720}}>
