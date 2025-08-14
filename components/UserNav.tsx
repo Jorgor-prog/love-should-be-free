@@ -7,7 +7,7 @@ export default function UserNav(){
   return (
     <div className="nav">
       <div className="brand">
-        <Image src="/images/Logo_2.png" alt="logo" width={36} height={36} />
+        <Image src="/images/Logo_2.webp" alt="logo" width={36} height={36} />
         <span>LOVE SHOULD BE FREE</span>
       </div>
       <div style={{display:'flex',gap:12}}>
