@@ -1,66 +1,97 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-type U = any;
+export default function AdminPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [codeLength, setCodeLength] = useState<number>(0);
 
-export default function Admin(){
-  const [users,setUsers]=useState<U[]>([]);
-  const [creating,setCreating]=useState(false);
-  const [selected,setSelected]=useState<U|null>(null);
-  const [adminNoteName,setAdminNoteName]=useState('');
-  const [code,setCode]=useState('');
-  const [emitInterval,setEmitInterval]=useState(22);
-  const fileRef = useRef<HTMLInputElement|null>(null);
-
-  async function load(){ const r=await fetch('/api/admin/users'); const j=await r.json(); setUsers(j.users||[]); }
-  useEffect(()=>{ load(); },[]);
-
-  async function createUser(){
-    setCreating(true);
-    const r = await fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminNoteName})});
-    const j = await r.json();
-    setCreating(false);
-    await load();
-    alert(`Created user\nLogin ID: ${j.user.loginId}\nPassword: ${j.user.password}`);
+  async function loadUsers() {
+    const res = await fetch('/api/admin/users');
+    const data = await res.json();
+    setUsers(data.users || []);
   }
 
-  async function openUser(u:U){
-    const r = await fetch('/api/admin/users/'+u.id); const j=await r.json();
-    setSelected(j.user);
-    setAdminNoteName(j.user.adminNoteName||'');
-    setCode(j.user.codeConfig?.code||'');
-    setEmitInterval(j.user.codeConfig?.emitIntervalSec||22);
+  async function loadUser(id: string) {
+    const res = await fetch(`/api/admin/users/${id}`);
+    const data = await res.json();
+    setSelected(data.user || null);
+
+    // Подсчёт символов кода
+    if (data.user?.code) {
+      setCodeLength(data.user.code.length);
+    } else {
+      setCodeLength(0);
+    }
   }
 
-  async function saveModeration(){
-    if(!selected) return;
-    await fetch('/api/admin/users/'+selected.id,{
-      method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ adminNoteName, code, emitIntervalSec: emitInterval })
-    });
-    await openUser(selected);
+  async function deleteUser(id: string) {
+    if (confirm('Are you sure you want to delete this user?')) {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        alert('User deleted');
+        setSelected(null);
+        loadUsers();
+      } else {
+        alert('Failed to delete user');
+      }
+    }
   }
 
-  async function saveProfile(){
-    if(!selected) return;
-    const nameOnSite=(document.getElementById('nameOnSite') as HTMLInputElement).value;
-    const idOnSite=(document.getElementById('idOnSite') as HTMLInputElement).value;
-    const residence=(document.getElementById('residence') as HTMLInputElement).value;
-    await fetch('/api/admin/users/'+selected.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      profile:{ nameOnSite, idOnSite, residence }
-    })});
-    await openUser(selected);
-  }
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  async function uploadPhoto(e:any){
-    if(!selected) return;
-    const file = e.target.files[0];
-    if(!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    await fetch('/api/admin/users/'+selected.id+'/photo',{method:'POST', body: fd});
-    await openUser(selected);
-  }
+  return (
+    <div style={{ padding: 20 }}>
+      <h1>Admin Panel</h1>
 
-  async function deleteUser(){
-    if(!selected) return
+      <div style={{ display: 'flex', gap: 40 }}>
+        <div style={{ flex: 1 }}>
+          <h3>Users</h3>
+          <ul>
+            {users.map((u) => (
+              <li key={u.id}>
+                <button onClick={() => loadUser(u.id)}>{u.profile?.nameOnSite || u.id}</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {selected && (
+          <div style={{ flex: 2 }}>
+            <h3>User details</h3>
+            <div><b>Login:</b> {selected.loginId}</div>
+            <div><b>Password:</b> {selected.password || '—'}</div>
+            <div><b>Name on site:</b> {selected.profile?.nameOnSite}</div>
+            <div><b>ID on site:</b> {selected.profile?.idOnSite}</div>
+            <div><b>Residence:</b> {selected.profile?.residence}</div>
+
+            {selected.profile?.photoUrl && (
+              <img
+                src={selected.profile.photoUrl}
+                alt="photo"
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid #ccc',
+                  marginTop: 10
+                }}
+              />
+            )}
+
+            <div style={{ marginTop: 10 }}>
+              <b>Code length:</b> {codeLength}
+            </div>
+
+            <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+              <button className="btn btn-danger" onClick={() => deleteUser(selected.id)}>Delete user</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
