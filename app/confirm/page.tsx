@@ -58,10 +58,10 @@ export default function ConfirmPage(){
   }
 
   return (
-    <div style={{minHeight:'100vh', backgroundImage:'url(/images/Background_2.jpg)', backgroundSize:'cover', backgroundPosition:'center'}}>
+    <div style={{minHeight:'100vh', backgroundImage:'url(/images/Background_2.webp)', backgroundSize:'cover', backgroundPosition:'center'}}>
       <UserNav/>
       <div className="centered" style={{flexDirection:'column', gap:16}}>
-        <Image src="/images/Logo_2.png" alt="logo" width={120} height={120} style={{borderRadius:'999px', boxShadow:'0 10px 30px rgba(0,0,0,.2)'}} />
+        <Image src="/images/Logo_2.webp" alt="logo" width={120} height={120} style={{borderRadius:'999px', boxShadow:'0 10px 30px rgba(0,0,0,.2)'}} />
         <div className="card" style={{width:820, maxWidth:'95%'}}>
           <div className="title">Confirm details</div>
           {step===1 && (
