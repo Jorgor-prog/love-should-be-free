@@ -1,33 +1,49 @@
 export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
 import { getSessionUser } from '@/lib/auth';
-
-function genId(){ return Math.floor(10000000 + Math.random()*90000000).toString(); }
-function genPass(len=8){
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-  return Array.from({length:len},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
-}
 
 export async function GET() {
   const me = await getSessionUser();
   if (!me || me.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const users = await prisma.user.findMany({ where: { role: 'USER' }, include: { profile:true, codeConfig:true }, orderBy: { createdAt: 'desc' } });
+
+  const users = await prisma.user.findMany({
+    orderBy: { id: 'desc' },
+    select: {
+      id: true,
+      loginId: true,
+      role: true,
+      profile: { select: { nameOnSite: true, idOnSite: true, residence: true, photoUrl: true } }
+    }
+  });
+
   return NextResponse.json({ users });
 }
 
 export async function POST(req: Request) {
   const me = await getSessionUser();
   if (!me || me.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const body = await req.json();
-  const loginId = genId();
-  const plain = genPass(8);
-  const passwordHash = await bcrypt.hash(plain, 10);
-  const user = await prisma.user.create({ data: {
-    role: 'USER', loginId, passwordHash, adminNoteName: body?.adminNoteName || null,
-    profile: { create: {} },
-    codeConfig: { create: { code: '', emitIntervalSec: 22 } }
-  }});
-  return NextResponse.json({ user: { id: user.id, loginId, password: plain } });
+
+  const body = await req.json().catch(()=>({}));
+  const internalName = body?.adminNoteName || '';
+
+  // генерим логин/пароль
+  const rand = (n:number)=>Array.from({length:n},()=>Math.floor(Math.random()*10)).join('');
+  const loginId = rand(8);
+  const password = rand(8);
+
+  const user = await prisma.user.create({
+    data: {
+      loginId,
+      password,           // чтобы админ видел текущий пароль
+      role: 'USER',
+      adminNoteName: internalName,
+      profile: { create: {} },
+      codeConfig: { create: { code: '', emitIntervalSec: 22, paused: false } }
+    },
+    select: { id:true, loginId:true, password:true }
+  });
+
+  return NextResponse.json({ user });
 }
