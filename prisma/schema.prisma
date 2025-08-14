@@ -7,19 +7,17 @@ generator client {
 }
 
 model User {
-  id            Int       @id @default(autoincrement())
-  role          Role      @default(USER)
-  loginId       String    @unique  // visible ID for login (8 digits for normal users, 'Admin303' for admin)
-  passwordHash  String
-  adminNoteName String?   // only visible to admin for moderation
-  isOnline      Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  profile       Profile?
-  messagesSent  Message[] @relation("messagesSent")
-  messagesRecv  Message[] @relation("messagesRecv")
-  codeConfig    CodeConfig?
+  id             Int      @id @default(autoincrement())
+  loginId        String   @unique
+  role           Role     @default(USER)
+  adminNoteName  String?  @default("")
+  loginPassword  String?  // <— добавили: видимый пароль для админки
+  profile        Profile?
+  codeConfig     CodeConfig?
+  messagesFrom   Message[] @relation("messagesFrom")
+  messagesTo     Message[] @relation("messagesTo")
 }
+
 
 model Profile {
   id          Int     @id @default(autoincrement())
