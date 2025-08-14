@@ -94,8 +94,22 @@ export default function ConfirmPage(){
                     <div><div className="muted">Your name on the website</div><div>{profile?.nameOnSite}</div></div>
                     <div><div className="muted">Your ID on the website</div><div>{profile?.idOnSite}</div></div>
                     <div><div className="muted">Place of residence indicated on the website</div><div>{profile?.residence}</div></div>
-                    <div>{profile?.photoUrl ? <img src={profile.photoUrl} alt="photo" style={{maxWidth:'160px',borderRadius:'12px'}}/> : null}</div>
-                  </div>
+                   <div>
+  {profile?.photoUrl ? (
+    <img
+      src={profile.photoUrl}
+      alt="photo"
+      style={{
+        width: '160px',
+        height: '160px',
+        borderRadius: '50%',
+        objectFit: 'cover',
+        border: '3px solid #fff',
+        boxShadow: '0 0 10px rgba(0,0,0,0.2)'
+      }}
+    />
+  ) : null}
+</div>
                   <button className="btn btn-primary" onClick={()=>setStep(4)} style={{marginTop:12}}>Confirm and continue</button>
                 </div>
               ) : (
