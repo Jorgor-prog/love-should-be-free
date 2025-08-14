@@ -2,6 +2,7 @@
   "name": "love-should-be-free",
   "private": true,
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -22,5 +23,11 @@
     "cookie": "0.6.0",
     "formidable": "3.5.4",
     "sharp": "0.33.2"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0"
   }
 }
