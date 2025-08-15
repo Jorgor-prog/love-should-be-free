@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 export default function UserNav(){
   const [hasUnread, setHasUnread] = useState(false);
 
-  // Heartbeat: помечаем себя онлайн
   useEffect(()=>{
     const tick = () => fetch('/api/heartbeat', { method:'POST' }).catch(()=>{});
     tick();
@@ -13,7 +12,6 @@ export default function UserNav(){
     return ()=>clearInterval(id);
   },[]);
 
-  // Индикатор чата на основе последнего входящего id
   useEffect(()=>{
     let stop = false;
     const check = async ()=>{
@@ -39,20 +37,18 @@ export default function UserNav(){
     <div style={{
       position:'sticky', top:0, zIndex:50,
       backdropFilter:'saturate(120%) blur(4px)',
-      background:'rgba(17,24,39,0.6)', // полупрозрачная
+      background:'rgba(17,24,39,0.6)',
       borderBottom:'1px solid rgba(31,41,55,0.8)'
     }}>
       <div className="nav" style={{padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
         <div className="brand" style={{display:'flex',alignItems:'center',gap:10}}>
           <Image src="/images/Logo_2.webp" alt="logo" width={44} height={44} style={{borderRadius:'50%'}} />
-          <span style={{fontWeight:700, letterSpacing:0.3}}>LOVE SHOULD BE FREE</span>
+          <span style={{fontWeight:700, letterSpacing:0.3}}>LOVE MUST BE FREE</span>
         </div>
         <div style={{display:'flex',gap:12, alignItems:'center'}}>
           <a className="btn" href="/chat" style={{position:'relative'}}>
             Chat
-            {hasUnread && <span style={{
-              position:'absolute', top:-3, right:-6, width:10, height:10, borderRadius:'50%', background:'#ef4444', boxShadow:'0 0 0 2px rgba(17,24,39,0.6)'
-            }}/>}
+            {hasUnread && <span style={{position:'absolute', top:-3, right:-6, width:10, height:10, borderRadius:'50%', background:'#ef4444', boxShadow:'0 0 0 2px rgba(17,24,39,0.6)'}}/>}
           </a>
           <a className="btn" href="/about">About</a>
           <a className="btn" href="/reviews">Reviews</a>
@@ -60,7 +56,7 @@ export default function UserNav(){
         </div>
       </div>
       <style jsx global>{`
-        .btn:visited, .nav a:visited { color: inherit; }
+        a, a:visited, .btn:visited, .nav a:visited { color: inherit !important; opacity: 1 !important; }
       `}</style>
     </div>
   );
