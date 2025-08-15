@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 
 type Profile = { nameOnSite?:string; idOnSite?:string; residence?:string; photoUrl?:string };
 type CodeCfg = { code?:string; emitIntervalSec?:number; paused?:boolean };
-type UserLite = { id:number; loginId:string; password?:string|null; adminNoteName?:string|null; profile?:Profile; codeConfig?:CodeCfg };
+type UserLite = { id:number; loginId:string; password?:string|null; adminNoteName?:string|null; profile?:Profile; codeConfig?:CodeCfg; isOnline?:boolean; updatedAt?:string };
 
 export default function AdminPage() {
   const [users, setUsers] = useState<UserLite[]>([]);
@@ -12,12 +12,44 @@ export default function AdminPage() {
   const [code, setCode] = useState('');
   const [emitInterval, setEmitInterval] = useState(22);
   const [creating, setCreating] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(()=>{ document.body.style.background = '#0f172a'; return ()=>{ document.body.style.background=''; };},[]);
+
+  // Heartbeat
+  useEffect(()=>{
+    const tick = () => fetch('/api/heartbeat', { method:'POST' }).catch(()=>{});
+    tick();
+    const id = setInterval(tick, 30000);
+    return ()=>clearInterval(id);
+  },[]);
+
+  // Иконка чата с индикатором
+  useEffect(()=>{
+    let stop=false;
+    const check = async ()=>{
+      try{
+        const r = await fetch('/api/chat/inbox');
+        const j = await r.json();
+        const latestId = j?.latestId || 0;
+        const lastSeen = Number(localStorage.getItem('chatLastSeenId_admin')||'0');
+        if(!stop) setHasUnread(latestId>lastSeen);
+      }catch{}
+    };
+    check();
+    const id = setInterval(check, 12000);
+    return ()=>{ stop=true; clearInterval(id); };
+  },[]);
 
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login';
+  }
+
+  function showToast(msg:string){
+    setToast(msg);
+    setTimeout(()=>setToast(null), 3000);
   }
 
   async function loadUsers() {
@@ -46,6 +78,12 @@ export default function AdminPage() {
     setCreating(false);
     if (!r.ok) { alert('Failed to create'); return; }
     const j = await r.json();
+    showToast('пользователь создан');
+    // Очищаем поля и выбор
+    setSelected(null);
+    setCode('');
+    setEmitInterval(22);
+    setInternalName('');
     await loadUsers();
     alert(`User created\nLogin: ${j.user.loginId}\nPassword: ${j.user.password}`);
   }
@@ -60,6 +98,7 @@ export default function AdminPage() {
       body: JSON.stringify({ profile:{ nameOnSite, idOnSite, residence } })
     });
     await openUser(selected.id);
+    showToast('пользователь сохранен');
   }
 
   async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,6 +109,7 @@ export default function AdminPage() {
     fd.append('file', file);
     await fetch(`/api/admin/users/${selected.id}/photo`, { method:'POST', body: fd });
     await openUser(selected.id);
+    showToast('пользователь сохранен');
   }
 
   async function saveModeration() {
@@ -79,6 +119,7 @@ export default function AdminPage() {
       body: JSON.stringify({ adminNoteName: internalName, code, emitIntervalSec: emitInterval })
     });
     await openUser(selected.id);
+    showToast('пользователь сохранен');
   }
 
   async function deleteUser() {
@@ -87,17 +128,27 @@ export default function AdminPage() {
     await fetch(`/api/admin/users/${selected.id}`, { method:'DELETE' });
     setSelected(null);
     await loadUsers();
+    showToast('пользователь удален');
   }
 
   useEffect(()=>{ loadUsers(); },[]);
 
-  // Мягкая тёмная тема (3-4 цвета): фон #0f172a, панели #111827/#1f2937, акценты #38bdf8/#a78bfa
+  const now = Date.now();
+  const isOnline = (u:UserLite) => {
+    const ts = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
+    return !!u.isOnline && (now - ts) < 120000; // 2 мин
+  };
+
   return (
     <div style={{ minHeight:'100vh', color:'#e5e7eb' }}>
       {/* top bar */}
-      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', background:'#111827', borderBottom:'1px solid #1f2937', position:'sticky', top:0, zIndex:10}}>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', background:'rgba(17,24,39,0.6)', backdropFilter:'saturate(120%) blur(4px)', borderBottom:'1px solid #1f2937', position:'sticky', top:0, zIndex:10}}>
         <div style={{fontSize:22, fontWeight:700}}>Admin Panel</div>
         <div style={{display:'flex', gap:10}}>
+          <a className="btn" href="/chat" style={{position:'relative', borderColor:'#38bdf8', color:'#38bdf8'}}>
+            Chat
+            {hasUnread && <span style={{position:'absolute', top:-3, right:-6, width:10, height:10, borderRadius:'50%', background:'#ef4444', boxShadow:'0 0 0 2px rgba(17,24,39,0.6)'}}/>}
+          </a>
           <button className="btn" style={{borderColor:'#38bdf8', color:'#38bdf8'}} onClick={logout}>Logout</button>
         </div>
       </div>
@@ -137,10 +188,16 @@ export default function AdminPage() {
                   border:'1px solid #1f2937',
                   color:'#e5e7eb',
                   borderRadius:10,
-                  padding:'10px 12px'
+                  padding:'10px 12px',
+                  display:'flex',
+                  alignItems:'center',
+                  gap:8
                 }}
               >
-                {/* ВСЕГДА показываем Internal name, а не имя из анкеты */}
+                <span style={{
+                  width:10, height:10, borderRadius:'50%',
+                  background: isOnline(u) ? '#22c55e' : '#64748b'
+                }}/>
                 {u.adminNoteName || `User #${u.id}`}
               </button>
             ))}
@@ -228,6 +285,17 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position:'fixed', bottom:20, left:'50%', transform:'translateX(-50%)',
+          background:'#111827', color:'#e5e7eb', border:'1px solid #1f2937', borderRadius:10,
+          padding:'10px 14px', boxShadow:'0 10px 22px rgba(0,0,0,.35)', zIndex:100
+        }}>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
