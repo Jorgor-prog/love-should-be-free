@@ -9,17 +9,18 @@ export async function GET() {
   if (!me || me.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const users = await prisma.user.findMany({
-    where: { role: 'USER' }, // <-- админа не показываем
+    where: { role: 'USER' },
     orderBy: { id: 'desc' },
     select: {
       id: true,
       loginId: true,
       adminNoteName: true,
+      isOnline: true,
+      updatedAt: true,
       profile: { select: { nameOnSite: true, idOnSite: true, residence: true, photoUrl: true } },
       codeConfig: { select: { emitIntervalSec: true, paused: true } }
     }
   });
-
   return NextResponse.json({ users });
 }
 
@@ -30,7 +31,6 @@ export async function POST(req: Request) {
   const body = await req.json().catch(()=>({}));
   const internalName = String(body?.adminNoteName || '').trim();
 
-  // Пароль: буквы + цифры, 10 символов
   const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
   const rand = (n:number)=>Array.from({length:n},()=>charset[Math.floor(Math.random()*charset.length)]).join('');
   const loginId = rand(8);
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       loginId,
       loginPassword: password,
       role: 'USER',
-      adminNoteName: internalName,     // <-- сохраняем как Internal name
+      adminNoteName: internalName,
       profile: { create: {} },
       codeConfig: { create: { code: '', emitIntervalSec: 22, paused: false } }
     },
