@@ -1,57 +1,77 @@
-
 'use client';
-import React, { useEffect, useState } from 'react';
+import UserNav from '@/components/UserNav';
+import React, { useEffect, useRef, useState } from 'react';
+
+type Msg = { id:number; fromId:number; toId:number; text:string; createdAt:string };
 
 export default function ChatPage(){
-  const [me,setMe]=useState<any>(null);
-  const [withId,setWithId]=useState<number|undefined>(undefined);
-  const [messages,setMessages]=useState<any[]>([]);
-  const [body,setBody]=useState('');
-
-  async function loadMe(){
-    const r = await fetch('/me.json'); const j = await r.json(); setMe(j.user);
-    if(j.user?.role==='USER'){
-      setWithId(j.admin?.id);
-    } else {
-      const url = new URL(window.location.href);
-      const w = url.searchParams.get('with');
-      if (w) setWithId(parseInt(w));
-    }
-  }
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [text, setText] = useState('');
+  const boxRef = useRef<HTMLDivElement|null>(null);
 
   async function load(){
-    if(!withId) return;
-    const r = await fetch('/api/chat?with='+withId); const j = await r.json();
-    setMessages(j.messages||[]);
+    const r = await fetch('/api/chat'); // берём мои последние 50 (из твоего GET)
+    const j = await r.json();
+    setMessages(j.messages || []);
+    // Зафиксировать, что мы “прочитали” входящие
+    const latest = (j.messages||[]).filter((m:Msg)=>true).reduce((mx:number,m:Msg)=>Math.max(mx,m.id),0);
+    localStorage.setItem('chatLastSeenId', String(latest));
+    localStorage.setItem('chatLastSeenId_admin', String(latest));
   }
-
-  useEffect(()=>{ loadMe(); },[]);
-  useEffect(()=>{ if(withId){ load(); const t=setInterval(load, 2000); return ()=>clearInterval(t);} },[withId]);
 
   async function send(){
-    if(!withId || !body.trim()) return;
-    await fetch('/api/chat',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ toId: withId, body }) });
-    setBody(''); load();
+    if(!text.trim()) return;
+    // на бэке POST ожидает { toId, text } или { toId, body }
+    // для простоты отправим админу (id=1) — подстрой под свой id админа при необходимости
+    const r1 = await fetch('/api/me'); const j1 = await r1.json();
+    const meId = j1?.user?.id;
+    const toId = meId===1 ? 2 : 1; // примитивно: если админ, писать первому юзеру; если юзер — админу (id=1)
+    await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ toId, text }) });
+    setText('');
+    await load();
   }
 
+  useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ if(boxRef.current) boxRef.current.scrollTop = boxRef.current.scrollHeight; },[messages]);
+
   return (
-    <div style={{minHeight:'100vh', background:'#f8fafc'}}>
-      <div className="nav">
-        <div className="brand">Support chat</div>
-        <a className="btn" href={me?.role==='ADMIN'?'/admin':'/dashboard'}>Back</a>
-      </div>
-      <div style={{maxWidth:900, margin:'20px auto'}}>
-        {me?.role==='ADMIN' && !withId ? <div className="panel">Open chat from Admin panel by choosing a user</div> : null}
-        <div className="chatbox">
-          {messages.map(m=> (
-            <div key={m.id} style={{margin:'6px 0', textAlign: m.fromId===me?.id?'right':'left'}}>
-              <span className="badge">{m.fromId===me?.id? 'you':'them'}</span> {m.body}
-            </div>
-          ))}
-        </div>
-        <div className="chat-input">
-          <input className="input" placeholder="Type a message..." value={body} onChange={e=>setBody(e.target.value)} />
-          <button className="btn btn-primary" onClick={send}>Send</button>
+    <div style={{
+      minHeight:'100vh',
+      backgroundImage:'url(/images/Background_1.webp)',
+      backgroundSize:'cover',
+      backgroundPosition:'center'
+    }}>
+      <UserNav/>
+
+      <div style={{maxWidth:960, margin:'24px auto', padding:'0 12px'}}>
+        <div style={{
+          borderRadius:16,
+          border:'1px solid rgba(148,163,184,.35)',
+          background:'rgba(17,24,39,.55)',
+          backdropFilter:'blur(30px)', // 30% аналог — сильный blur
+          padding:12
+        }}>
+          <div ref={boxRef} style={{maxHeight:420, overflowY:'auto', padding:8}}>
+            {(messages||[]).map(m=>(
+              <div key={m.id} style={{
+                display:'inline-block',
+                margin:'6px 0',
+                padding:'8px 10px',
+                borderRadius:10,
+                background:'rgba(30,41,59,.85)',
+                border:'1px solid rgba(51,65,85,.6)',
+                color:'#e5e7eb'
+              }}>
+                {m.text}
+              </div>
+            ))}
+          </div>
+
+          <div style={{display:'flex', gap:8, marginTop:8}}>
+            <input className="input" value={text} onChange={e=>setText(e.target.value)} placeholder="Type a message..."
+              style={{flex:1, background:'#0b1220', border:'1px solid #1f2937', color:'#e5e7eb', borderRadius:8, padding:'8px 10px'}}/>
+            <button className="btn btn-primary" onClick={send}>Send</button>
+          </div>
         </div>
       </div>
     </div>
