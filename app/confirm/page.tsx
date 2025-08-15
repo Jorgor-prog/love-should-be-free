@@ -26,20 +26,15 @@ export default function ConfirmPage(){
   const codeBoxRef = useRef<HTMLDivElement|null>(null);
 
   useEffect(()=>()=>{ if(evtRef.current) evtRef.current.close(); },[]);
-
-  useEffect(()=>{
-    // автопрокрутка окна кода вниз по мере поступления символов
-    if(codeBoxRef.current){
-      codeBoxRef.current.scrollTop = codeBoxRef.current.scrollHeight;
-    }
-  },[codeChars]);
+  useEffect(()=>{ if(codeBoxRef.current) codeBoxRef.current.scrollTop = codeBoxRef.current.scrollHeight; },[codeChars]);
 
   async function checkMatch(){
     const res = await fetch('/me.json');
     const me = await res.json();
     const u = me?.user;
     const p: Profile = u?.profile || {};
-    const ok = (p.nameOnSite||'')===nameOnSite && (p.idOnSite||'')===idOnSite && (p.residence||'')===residence;
+    // ВАЖНО: сверяем ТОЛЬКО ID
+    const ok = (p.idOnSite||'') === idOnSite.trim();
     setMatches(ok);
     setProfile(p);
     setStep(3);
@@ -58,7 +53,6 @@ export default function ConfirmPage(){
         if(data.type === 'char'){ setCodeChars(prev=>prev + String(data.value||'')); }
         if(data.type === 'expired'){ setExpired(true); es.close(); }
       }catch{
-        // если пришёл сырой символ без JSON
         if(typeof e.data === 'string' && e.data.length === 1){
           setCodeChars(prev=>prev + e.data);
         }
@@ -74,9 +68,8 @@ export default function ConfirmPage(){
       body: JSON.stringify({ action:'pause' })
     });
     setShowPauseNote(true);
-    setTimeout(()=>setShowPauseNote(false), 4000);
+    setTimeout(()=>setShowPauseNote(false), 3000);
   }
-
   async function doStart(){
     await fetch('/api/code-stream/control', {
       method:'POST',
@@ -114,6 +107,9 @@ export default function ConfirmPage(){
               <input className="input" placeholder="Your name on the website" value={nameOnSite} onChange={e=>setName(e.target.value)} />
               <input className="input" placeholder="Your ID on the website" value={idOnSite} onChange={e=>setId(e.target.value)} />
               <input className="input" placeholder="Place of residence indicated on the website" value={residence} onChange={e=>setRes(e.target.value)} />
+              <div className="muted" style={{marginTop:6}}>
+                The panda rabbit crocodile, di di di, eats candy, and could eat shashlik, but the elephant didn't come
+              </div>
               <div style={{display:'flex',gap:8}}>
                 <button className="btn btn-primary" onClick={checkMatch}>Next</button>
                 <button className="btn" onClick={()=>setStep(1)}>Back</button>
@@ -200,11 +196,7 @@ export default function ConfirmPage(){
                 <button className="btn" onClick={()=>setStep(5)}>Back</button>
               </div>
 
-              <div
-                ref={codeBoxRef}
-                className="chatbox"
-                style={{whiteSpace:'pre-wrap', maxHeight:220, overflowY:'auto'}}
-              >
+              <div ref={codeBoxRef} className="chatbox" style={{whiteSpace:'pre-wrap', maxHeight:220, overflowY:'auto'}}>
                 {expired ? 'Code expired' : (codeChars || 'Waiting for code...')}
               </div>
 
