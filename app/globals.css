@@ -26,3 +26,4 @@ a{color:inherit;text-decoration:none}
 .chatbox{border:1px solid #e5e7eb;border-radius:16px;height:360px;overflow:auto;padding:12px;background:#fafafa}
 .chat-input{display:flex;gap:8px;margin-top:8px}
 .pill{padding:6px 10px;border:1px solid #d1d5db;border-radius:999px}
+a, a:visited { color: inherit !important; opacity: 1 !important; }
