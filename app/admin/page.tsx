@@ -6,12 +6,14 @@ type CodeCfg = { code?:string; emitIntervalSec?:number; paused?:boolean };
 type UserLite = { id:number; loginId:string; password?:string|null; adminNoteName?:string|null; profile?:Profile; codeConfig?:CodeCfg; isOnline?:boolean; updatedAt?:string };
 
 export default function AdminPage() {
+  // Быстрый клиентский гард на роль
   useEffect(()=>{
-  (async ()=>{
-    const me = await fetch('/api/me').then(r=>r.json()).catch(()=>null);
-    if(me?.user?.role !== 'ADMIN') window.location.href = '/dashboard';
-  })();
-},[]);
+    (async ()=>{
+      const me = await fetch('/api/me').then(r=>r.json()).catch(()=>null);
+      if(me?.user?.role !== 'ADMIN') window.location.href = '/dashboard';
+    })();
+  },[]);
+
   const [users, setUsers] = useState<UserLite[]>([]);
   const [selected, setSelected] = useState<UserLite | null>(null);
   const [internalName, setInternalName] = useState('');
@@ -20,6 +22,8 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [hasUnread, setHasUnread] = useState(false);
+  // Инбокс для индикатора «конвертик»
+  const [inbox, setInbox] = useState<{fromId:number; lastId:number}[]>([]);
 
   useEffect(()=>{ document.body.style.background = '#0f172a'; return ()=>{ document.body.style.background=''; };},[]);
 
@@ -31,7 +35,7 @@ export default function AdminPage() {
     return ()=>clearInterval(id);
   },[]);
 
-  // Иконка чата с индикатором
+  // Индикатор «есть новые вообще» в шапке
   useEffect(()=>{
     let stop=false;
     const check = async ()=>{
@@ -48,6 +52,31 @@ export default function AdminPage() {
     return ()=>{ stop=true; clearInterval(id); };
   },[]);
 
+  // Загрузка пользователей
+  async function loadUsers() {
+    const r = await fetch('/api/admin/users');
+    if (!r.ok) { alert('Auth error. Re-login as Admin.'); return; }
+    const j = await r.json();
+    setUsers(j.users || []);
+  }
+
+  // Загрузка инбокса для конвертиков
+  async function loadInbox(){
+    try{
+      const r = await fetch('/api/chat/inbox');
+      const j = await r.json();
+      setInbox((j.items||[]).map((x:any)=>({ fromId:x.fromId, lastId:x.lastId })));
+    }catch{}
+  }
+
+  // Совмещённый bootstrap + автообновление инбокса
+  useEffect(()=>{
+    loadUsers();
+    loadInbox();
+    const id = setInterval(loadInbox, 12000);
+    return ()=>clearInterval(id);
+  },[]);
+
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login';
@@ -58,13 +87,6 @@ export default function AdminPage() {
     setTimeout(()=>setToast(null), 3000);
   }
 
-  async function loadUsers() {
-    const r = await fetch('/api/admin/users');
-    if (!r.ok) { alert('Auth error. Re-login as Admin.'); return; }
-    const j = await r.json();
-    setUsers(j.users || []);
-  }
-
   async function openUser(id: number) {
     const r = await fetch(`/api/admin/users/${id}`);
     const j = await r.json();
@@ -73,6 +95,12 @@ export default function AdminPage() {
     setInternalName(u.adminNoteName || '');
     setCode(u.codeConfig?.code || '');
     setEmitInterval(u.codeConfig?.emitIntervalSec || 22);
+    // как только зашли в чат конкретного юзера — считаем его входящие прочитанными
+    // обновим lastSeen для глобального индикатора
+    const last = inbox.find(x=>x.fromId===u.id)?.lastId || 0;
+    if(last) localStorage.setItem('chatLastSeenId_admin', String(last));
+    // и обновим список инбокса
+    loadInbox();
   }
 
   async function createUser() {
@@ -137,8 +165,6 @@ export default function AdminPage() {
     showToast('пользователь удален');
   }
 
-  useEffect(()=>{ loadUsers(); },[]);
-
   const now = Date.now();
   const isOnline = (u:UserLite) => {
     const ts = u.updatedAt ? new Date(u.updatedAt).getTime() : 0;
@@ -183,30 +209,40 @@ export default function AdminPage() {
           </div>
 
           <div style={{ display:'grid', gap:8 }}>
-            {users.map(u=>(
-              <button
-                key={u.id}
-                className="btn"
-                onClick={()=>openUser(u.id)}
-                style={{
-                  textAlign:'left',
-                  background:'#0b1220',
-                  border:'1px solid #1f2937',
-                  color:'#e5e7eb',
-                  borderRadius:10,
-                  padding:'10px 12px',
-                  display:'flex',
-                  alignItems:'center',
-                  gap:8
-                }}
-              >
-                <span style={{
-                  width:10, height:10, borderRadius:'50%',
-                  background: isOnline(u) ? '#22c55e' : '#64748b'
-                }}/>
-                {u.adminNoteName || `User #${u.id}`}
-              </button>
-            ))}
+            {users.map(u=>{
+              const unread = inbox.some(it => it.fromId === u.id); // есть новые сообщения от этого пользователя
+              return (
+                <button
+                  key={u.id}
+                  className="btn"
+                  onClick={()=>openUser(u.id)}
+                  style={{
+                    textAlign:'left',
+                    background:'#0b1220',
+                    border:'1px solid #1f2937',
+                    color:'#e5e7eb',
+                    borderRadius:10,
+                    padding:'10px 12px',
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'space-between',
+                    gap:8
+                  }}
+                >
+                  <span style={{display:'flex', alignItems:'center', gap:8}}>
+                    <span style={{ width:10, height:10, borderRadius:'50%', background: isOnline(u) ? '#22c55e' : '#64748b' }}/>
+                    {u.adminNoteName || `User #${u.id}`}
+                  </span>
+                  {unread && (
+                    <span title="New messages" style={{
+                      width:16, height:12, border:'1px solid #38bdf8', borderRadius:2, display:'inline-block', position:'relative'
+                    }}>
+                      <span style={{position:'absolute', top:-5, right:-5, width:8, height:8, borderRadius:'50%', background:'#ef4444'}}/>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
             {users.length === 0 && <div className="muted" style={{color:'#94a3b8'}}>No users yet</div>}
           </div>
         </div>
