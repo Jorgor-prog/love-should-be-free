@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 import { redirect } from 'next/navigation';
 import { getSessionUser } from '@/lib/auth';
 import UserNav from '@/components/UserNav';
@@ -11,7 +10,7 @@ export default async function Dashboard(){
   return (
     <div style={{
       minHeight:'100vh',
-      backgroundImage:'url(/images/Background_2.webp)',
+      backgroundImage:'url(/images/Background_1.webp)',
       backgroundSize:'cover',
       backgroundPosition:'center',
       color:'#e5e7eb'
@@ -33,16 +32,7 @@ export default async function Dashboard(){
             </span>
           </div>
 
-          {/* НУЖНАЯ КНОПКА ВНУТРИ СООБЩЕНИЯ */}
-          <a
-            href="/confirm"
-            className="btn btn-primary"
-            style={{
-              display:'inline-block',
-              borderColor:'#38bdf8',
-              color:'#38bdf8'
-            }}
-          >
+          <a href="/confirm" className="btn btn-primary" style={{display:'inline-block', borderColor:'#38bdf8', color:'#38bdf8'}}>
             Clarify and confirm details
           </a>
 
