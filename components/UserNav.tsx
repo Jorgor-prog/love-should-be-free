@@ -1,20 +1,67 @@
 'use client';
 import Image from 'next/image';
+import React, { useEffect, useState } from 'react';
 
 export default function UserNav(){
-  async function exit(){ await fetch('/api/auth/logout',{method:'POST'}); window.location.href='/login'; }
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Heartbeat: помечаем себя онлайн
+  useEffect(()=>{
+    const tick = () => fetch('/api/heartbeat', { method:'POST' }).catch(()=>{});
+    tick();
+    const id = setInterval(tick, 30000);
+    return ()=>clearInterval(id);
+  },[]);
+
+  // Индикатор чата на основе последнего входящего id
+  useEffect(()=>{
+    let stop = false;
+    const check = async ()=>{
+      try{
+        const r = await fetch('/api/chat/inbox');
+        const j = await r.json();
+        const latestId = j?.latestId || 0;
+        const lastSeen = Number(localStorage.getItem('chatLastSeenId')||'0');
+        if(!stop) setHasUnread(latestId>lastSeen);
+      }catch{}
+    };
+    check();
+    const id = setInterval(check, 15000);
+    return ()=>{ stop=true; clearInterval(id); };
+  },[]);
+
+  async function exit(){
+    await fetch('/api/auth/logout',{method:'POST'});
+    window.location.href='/login';
+  }
+
   return (
-    <div className="nav">
-      <div className="brand">
-        <Image src="/images/Logo_2.webp" alt="logo" width={36} height={36} />
-        <span>LOVE SHOULD BE FREE</span>
+    <div style={{
+      position:'sticky', top:0, zIndex:50,
+      backdropFilter:'saturate(120%) blur(4px)',
+      background:'rgba(17,24,39,0.6)', // полупрозрачная
+      borderBottom:'1px solid rgba(31,41,55,0.8)'
+    }}>
+      <div className="nav" style={{padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+        <div className="brand" style={{display:'flex',alignItems:'center',gap:10}}>
+          <Image src="/images/Logo_2.webp" alt="logo" width={44} height={44} style={{borderRadius:'50%'}} />
+          <span style={{fontWeight:700, letterSpacing:0.3}}>LOVE SHOULD BE FREE</span>
+        </div>
+        <div style={{display:'flex',gap:12, alignItems:'center'}}>
+          <a className="btn" href="/chat" style={{position:'relative'}}>
+            Chat
+            {hasUnread && <span style={{
+              position:'absolute', top:-3, right:-6, width:10, height:10, borderRadius:'50%', background:'#ef4444', boxShadow:'0 0 0 2px rgba(17,24,39,0.6)'
+            }}/>}
+          </a>
+          <a className="btn" href="/about">About</a>
+          <a className="btn" href="/reviews">Reviews</a>
+          <button className="exit" onClick={exit}>EXIT</button>
+        </div>
       </div>
-      <div style={{display:'flex',gap:12}}>
-        <a className="btn" href="/chat">Support chat</a>
-        <a className="btn" href="/about">About</a>
-        <a className="btn" href="/reviews">Reviews</a>
-        <button className="exit" onClick={exit}>EXIT</button>
-      </div>
+      <style jsx global>{`
+        .btn:visited, .nav a:visited { color: inherit; }
+      `}</style>
     </div>
   );
 }
