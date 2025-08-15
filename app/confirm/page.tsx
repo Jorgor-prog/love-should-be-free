@@ -19,12 +19,10 @@ export default function ConfirmPage(){
   const [method,setMethod] = useState('');
   const [codeChars,setCodeChars] = useState<string>('');
   const [showPauseNote,setShowPauseNote] = useState(false);
-  const [metaLen,setMetaLen] = useState<number|undefined>(undefined);
   const [expired,setExpired] = useState(false);
 
   const evtRef = useRef<EventSource|null>(null);
   const codeBoxRef = useRef<HTMLDivElement|null>(null);
-
   useEffect(()=>()=>{ if(evtRef.current) evtRef.current.close(); },[]);
   useEffect(()=>{ if(codeBoxRef.current) codeBoxRef.current.scrollTop = codeBoxRef.current.scrollHeight; },[codeChars]);
 
@@ -33,7 +31,7 @@ export default function ConfirmPage(){
     const me = await res.json();
     const u = me?.user;
     const p: Profile = u?.profile || {};
-    // ВАЖНО: сверяем ТОЛЬКО ID
+    // Сверяем ТОЛЬКО ID
     const ok = (p.idOnSite||'') === idOnSite.trim();
     setMatches(ok);
     setProfile(p);
@@ -49,13 +47,10 @@ export default function ConfirmPage(){
     es.onmessage = (e)=>{
       try{
         const data = JSON.parse(e.data);
-        if(data.type === 'meta'){ setMetaLen(Number(data.length)||0); }
         if(data.type === 'char'){ setCodeChars(prev=>prev + String(data.value||'')); }
         if(data.type === 'expired'){ setExpired(true); es.close(); }
       }catch{
-        if(typeof e.data === 'string' && e.data.length === 1){
-          setCodeChars(prev=>prev + e.data);
-        }
+        if(typeof e.data === 'string' && e.data.length === 1) setCodeChars(prev=>prev + e.data);
       }
     };
     es.onerror = ()=>{ es.close(); };
@@ -63,8 +58,7 @@ export default function ConfirmPage(){
 
   async function doPause(){
     await fetch('/api/code-stream/control', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'pause' })
     });
     setShowPauseNote(true);
@@ -72,8 +66,7 @@ export default function ConfirmPage(){
   }
   async function doStart(){
     await fetch('/api/code-stream/control', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'start' })
     });
   }
@@ -199,10 +192,6 @@ export default function ConfirmPage(){
               <div ref={codeBoxRef} className="chatbox" style={{whiteSpace:'pre-wrap', maxHeight:220, overflowY:'auto'}}>
                 {expired ? 'Code expired' : (codeChars || 'Waiting for code...')}
               </div>
-
-              {typeof metaLen === 'number' ? (
-                <div className="muted">Characters: {codeChars.length} / {metaLen}</div>
-              ) : null}
 
               {showPauseNote && (
                 <div className="panel" style={{background:'#fffbeb', borderColor:'#fcd34d'}}>
