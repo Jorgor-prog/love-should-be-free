@@ -6,6 +6,12 @@ type CodeCfg = { code?:string; emitIntervalSec?:number; paused?:boolean };
 type UserLite = { id:number; loginId:string; password?:string|null; adminNoteName?:string|null; profile?:Profile; codeConfig?:CodeCfg; isOnline?:boolean; updatedAt?:string };
 
 export default function AdminPage() {
+  useEffect(()=>{
+  (async ()=>{
+    const me = await fetch('/api/me').then(r=>r.json()).catch(()=>null);
+    if(me?.user?.role !== 'ADMIN') window.location.href = '/dashboard';
+  })();
+},[]);
   const [users, setUsers] = useState<UserLite[]>([]);
   const [selected, setSelected] = useState<UserLite | null>(null);
   const [internalName, setInternalName] = useState('');
