@@ -1,21 +1,37 @@
-
 'use client';
 import UserNav from '@/components/UserNav';
+
 export default function Reviews(){
   const items = [
-    "Я не понимаю, как можно так испортить солёные огурцы! Вместо хрустящей корочки — вялые, мягкие, будто полежали неделю на солнце. Вкус пересолен, уксус перебивает всё, даже огуречного аромата не осталось. За такую банку стыдно брать деньги. Больше никогда не куплю этот ужас.",
-    "Эти солёные огурчики — просто восторг! Хрустят так, что слышно на весь стол, вкус идеально сбалансирован: умеренная соль, лёгкая кислинка и яркий аромат укропа. Отлично подходят к горячей картошке и мясу. Даже гости спрашивали, где я их взяла. Настоящее возвращение во вкус детства!",
-    "Огурцы как огурцы: солёные, слегка кисловатые, запах укропа присутствует, но без особых чудес. Не развалились, но и особого хруста нет. Подойдут для салата или гарнира, но не станут украшением стола. В общем, нормальный вариант, если просто хочется добавить что-то к обеду."
+    "Я не понимаю, как можно так испортить солёные огурцы!...",
+    "Эти солёные огурчики — просто восторг!...",
+    "Огурцы как огурцы: солёные, слегка кисловатые..."
+    "Огурцы как огурцы: солёные, слегка кисловатые..."
+    "Огурцы как огурцы: солёные, слегка кисловатые... бла бал бал текст поменяем позже"
+    "бла бал бал текст поменяем позже"
   ];
+
   return (
-    <div style={{minHeight:'100vh', background:'#0f172a', color:'#e5e7eb'}}>
+    <div style={{
+      minHeight:'100vh',
+      backgroundImage:'url(/images/Background_1.webp)',
+      backgroundSize:'cover',
+      backgroundPosition:'center',
+      color:'#e5e7eb'
+    }}>
       <UserNav/>
-      <div style={{maxWidth:920, margin:'40px auto', display:'grid', gap:16}}>
-        {items.map((re,idx)=> (
-          <div key={idx} className="panel" style={{background:'#111827', color:'#e5e7eb'}}>
-            <p style={{margin:0,lineHeight:1.7}}>{re}</p>
-          </div>
-        ))}
+
+      <div style={{maxWidth:920, margin:'40px auto', padding:'0 12px'}}>
+        <div style={{display:'grid', gap:16}}>
+          {items.map((re,idx)=> (
+            <div key={idx} className="panel" style={{background:'rgba(17,24,39,.85)', border:'1px solid rgba(51,65,85,.6)', borderRadius:12}}>
+              <p style={{margin:0,lineHeight:1.7}}>{re}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:16}}>
+          <a className="btn" href="/dashboard">Back</a>
+        </div>
       </div>
     </div>
   );
